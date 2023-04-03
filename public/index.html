@@ -1,0 +1,214 @@
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Список страв</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
+
+</head>
+<body>
+    <div style="margin-left: 1%;">
+    <h2  class="mb-3 text-center " >Список страв</h2>
+    <form name="dishForm">
+        <input type="hidden" name="id" value="0" />
+        <div class="form-group">
+            <label for="dishName">Назва:</label>
+            <input class="form-control" style="max-width:20%;"name="dishName" />
+        </div>
+        <div class="form-group">
+            <label class="field_header" for="dishWeight">Вага:</label>
+            <input class="form-control" style="max-width:20%;" name="dishWeight" />
+        </div>
+        <div class="form-group">
+            <label class="field_header" for="dishCuisine">Кухня:</label>
+            <input class="form-control"style="max-width:20%;" name="dishCuisine" />
+        </div>
+        <div class="panel-body">
+            <button type="submit" class="btn btn-primary">Зберегти</button>
+            <a id="reset" class="btn btn-primary">Сбросить</a>
+        </div>
+        
+    </form>
+    </div>
+    <table class="table table-condensed table-striped table-bordered">
+        <thead><tr>
+            <th>Id</th>
+            <th>Назва</th>
+            <th>Вага</th>
+            <th>Кухня</th>
+            <th></th>
+            </tr></thead>
+                <tbody>
+        </tbody>
+    </table>
+   </div>
+    <script>
+    // Получение всех страв
+        async function GetDish() {
+            // отправляет запрос и получаем ответ
+            const response = await fetch("/api/dish", {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            // если запрос прошел нормально
+            if (response.ok === true) {
+                // получаем данные
+                const dishes = await response.json();
+                let rows = document.querySelector("tbody"); 
+                dishes.forEach(dish => {
+                    // добавляем полученные элементы в таблицу
+                    rows.append(row(dish));
+                });
+            }
+        }
+        // Получение одного пользователя
+        async function GetDishs(id) {
+            const response = await fetch("/api/dish/" + id, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const dish = await response.json();
+                const form = document.forms["dishForm"];
+                form.elements["id"].value = dish._id;
+                form.elements["dishName"].value = dish.dishName;
+                form.elements["dishWeight"].value = dish.dishWeight;
+                form.elements["dishCuisine"].value = dish.dishCuisine;
+
+            }
+        }
+        // Добавление пользователя
+        async function CreateDish(dishName, dishWeight,dishCuisine) {
+  
+            const response = await fetch("api/dish", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    dishName: dishName,
+                    dishCuisine: dishCuisine,
+                    dishWeight: parseInt(dishWeight, 10)
+                })
+            });
+            if (response.ok === true) {
+                const dish = await response.json();
+                reset();
+                document.querySelector("tbody").append(row(dish));
+            }
+        }
+        // Изменение пользователя
+            async function EditDish(dishId, dishName, dishWeight,dishCuisine) {
+                const response = await fetch("api/dish", {
+                    method: "PUT",
+                    headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        id: dishId,
+                        dishName: dishName,
+                        dishCuisine: dishCuisine,
+                        dishWeight: parseInt(dishWeight, 10)
+                    })
+                });
+                if (response.ok === true) {
+                    const dish = await response.json();
+                    reset();
+                    location.reload();
+                    document.querySelector("tr[data-rowid='" + dish._id + "']").replaceWith(row(dish));
+                }
+            }
+        // Удаление пользователя
+        async function DeleteDish(id) {
+            const response = await fetch("/api/dish/" + id, {
+                method: "DELETE",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const dish = await response.json();
+                document.querySelector("tr[data-rowid='" + dish._id + "']").remove();
+            }
+        }
+  
+        // сброс формы
+        function reset() {
+            const form = document.forms["dishForm"];
+            form.reset();
+            form.elements["id"].value = 0;
+        }
+        // создание строки для таблицы
+        function row(dish) {
+  
+            const tr = document.createElement("tr");
+            tr.setAttribute("data-rowid", dish._id);
+  
+            const idTd = document.createElement("td");
+            idTd.append(dish._id);
+            tr.append(idTd);
+  
+            const nameTd = document.createElement("td");
+            nameTd.append(dish.dishName);
+            tr.append(nameTd);
+  
+            const dishWeightTd = document.createElement("td");
+            dishWeightTd.append(dish.dishWeight);
+            tr.append(dishWeightTd);
+              
+            const dishCuisineTd = document.createElement("td");
+            dishCuisineTd.append(dish.dishCuisine);
+            tr.append(dishCuisineTd);
+
+            const linksTd = document.createElement("td");
+  
+            const editLink = document.createElement("a");
+            editLink.setAttribute("data-id", dish._id);
+            editLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            editLink.append("Змінити");
+            editLink.addEventListener("click", e => {
+  
+                e.preventDefault();
+                GetDishs(dish._id);
+            });
+            linksTd.append(editLink);
+  
+            const removeLink = document.createElement("a");
+            removeLink.setAttribute("data-id", dish._id);
+            removeLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            removeLink.append("Видалити");
+            removeLink.addEventListener("click", e => {
+  
+                e.preventDefault();
+                DeleteDish(dish._id);
+            });
+  
+            linksTd.append(removeLink);
+            tr.appendChild(linksTd);
+  
+            return tr;
+        }
+        // сброс значений формы
+        document.getElementById("reset").click(function (e) {
+  
+            e.preventDefault();
+            reset();
+        })
+  
+        // отправка формы
+        document.forms["dishForm"].addEventListener("submit", e => {
+            e.preventDefault();
+            const form = document.forms["dishForm"];
+            const id = form.elements["id"].value;
+            const dishName = form.elements["dishName"].value;
+            const dishWeight = form.elements["dishWeight"].value;
+            const dishCuisine = form.elements["dishCuisine"].value ;
+              
+            if (id == 0)
+                CreateDish(dishName, dishWeight,dishCuisine);
+            else
+                EditDish(id, dishName, dishWeight,dishCuisine);
+        });
+  
+        // загрузка страв
+        GetDish();
+    </script>
+</body>
+</html>
